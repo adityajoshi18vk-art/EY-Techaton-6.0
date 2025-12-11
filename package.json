@@ -1,0 +1,22 @@
+{
+  "name": "coders-adda-automotive",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EY Techathon 6.0 - Driving Automotive Intelligence",
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:web": "npm run dev --workspace=web",
+    "build": "npm run build --workspaces",
+    "build:server": "npm run build --workspace=server",
+    "build:web": "npm run build --workspace=web"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}
