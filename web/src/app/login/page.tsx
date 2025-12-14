@@ -1,22 +1,21 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore, type UserRole } from '@/store/auth';
 import { apiClient } from '@/lib/api-client';
 import { Brain, Loader2, Users, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
   const selectedRole = useAuthStore((state) => state.selectedRole);
-  
+
   const roleFromQuery = searchParams.get('role') as UserRole | null;
   const currentRole = roleFromQuery || selectedRole;
 
-  // Set default credentials based on role
   const getDefaultCredentials = (role: UserRole | null) => {
     if (role === 'customer') {
       return { email: 'customer@example.com', password: 'customer123' };
@@ -30,14 +29,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Update credentials when role changes
   useEffect(() => {
     const creds = getDefaultCredentials(currentRole);
     setEmail(creds.email);
     setPassword(creds.password);
   }, [currentRole]);
 
-  // Redirect if no role selected
   useEffect(() => {
     if (!currentRole) {
       router.push('/role-select');
@@ -52,8 +49,7 @@ export default function LoginPage() {
     try {
       const response = await apiClient.login(email, password, currentRole!);
       login(response.user, response.token);
-      
-      // Redirect based on role
+
       if (response.user.role === 'customer') {
         router.push('/customer-dashboard');
       } else {
@@ -69,7 +65,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
             <Brain className="w-10 h-10 text-blue-600" />
@@ -86,13 +81,12 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-gray-600">
-            {currentRole === 'customer' 
+            {currentRole === 'customer'
               ? 'Access your vehicle services and support'
               : 'Sign in to access the AI Agent Dashboard'}
           </p>
         </div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -147,10 +141,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Credentials */}
           <div className={`mt-6 p-4 rounded-lg border ${
-            currentRole === 'customer' 
-              ? 'bg-blue-50 border-blue-200' 
+            currentRole === 'customer'
+              ? 'bg-blue-50 border-blue-200'
               : 'bg-purple-50 border-purple-200'
           }`}>
             <p className={`text-sm font-medium mb-2 ${
@@ -176,10 +169,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-6 space-y-2">
           <Link href="/role-select" className="text-sm text-gray-600 hover:text-gray-900 transition-colors block">
-            ← Change Role
+             Change Role
           </Link>
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors block">
             Back to Home
@@ -187,5 +179,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
