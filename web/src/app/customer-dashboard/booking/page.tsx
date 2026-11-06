@@ -10,6 +10,10 @@ export default function CustomerBookingPage() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [showForm, setShowForm] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const [formData, setFormData] = useState({
     serviceType: 'Oil Change',
     scheduledDate: '',
@@ -17,7 +21,7 @@ export default function CustomerBookingPage() {
     notes: ''
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ['bookings'],
     queryFn: () => apiClient.getBookings(),
     refetchInterval: 5000,
@@ -25,7 +29,8 @@ export default function CustomerBookingPage() {
 
   const createBooking = useMutation({
     mutationFn: (booking: any) => apiClient.createBooking(booking),
-    onSuccess: () => {
+    onSuccess: (_data, booking) => {
+      setConfirmation(`Your ${booking.serviceType} appointment is scheduled for ${booking.scheduledDate} at ${booking.scheduledTime}.`);
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       setShowForm(false);
       setFormData({
@@ -39,6 +44,14 @@ export default function CustomerBookingPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError('');
+    setConfirmation('');
+    createBooking.reset();
+    const appointment = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
+    if (!Number.isFinite(appointment.getTime()) || appointment <= new Date()) {
+      setValidationError('Choose a future appointment date and time.');
+      return;
+    }
     createBooking.mutate({
       ...formData,
       customerId: user?.email?.split('@')[0] || 'C001',
@@ -76,7 +89,13 @@ export default function CustomerBookingPage() {
           <p className="text-gray-600">Schedule and manage your service appointments</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            createBooking.reset();
+            setValidationError('');
+            setConfirmation('');
+            setShowForm(!showForm);
+          }}
+          disabled={createBooking.isPending}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -84,16 +103,33 @@ export default function CustomerBookingPage() {
         </button>
       </div>
 
+      {confirmation && (
+        <p role="status" className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
+          {confirmation}
+        </p>
+      )}
+
+      {isError && (
+        <div role="alert" className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+          <p>Unable to load your bookings. Please try again.</p>
+          <button type="button" onClick={() => refetch()} disabled={isFetching} className="mt-2 font-medium underline disabled:opacity-50">
+            {isFetching ? 'Retrying...' : 'Retry loading bookings'}
+          </button>
+        </div>
+      )}
+
       {/* Booking Form */}
       {showForm && (
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Schedule Service</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="service-type" className="block text-sm font-medium text-gray-700 mb-2">
                 Service Type
               </label>
               <select
+                id="service-type"
+                disabled={createBooking.isPending}
                 value={formData.serviceType}
                 onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -110,11 +146,14 @@ export default function CustomerBookingPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="scheduled-date" className="block text-sm font-medium text-gray-700 mb-2">
                   Preferred Date
                 </label>
                 <input
                   type="date"
+                  id="scheduled-date"
+                  min={today}
+                  disabled={createBooking.isPending}
                   value={formData.scheduledDate}
                   onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -122,11 +161,13 @@ export default function CustomerBookingPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="scheduled-time" className="block text-sm font-medium text-gray-700 mb-2">
                   Preferred Time
                 </label>
                 <input
                   type="time"
+                  id="scheduled-time"
+                  disabled={createBooking.isPending}
                   value={formData.scheduledTime}
                   onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -136,10 +177,12 @@ export default function CustomerBookingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="booking-notes" className="block text-sm font-medium text-gray-700 mb-2">
                 Additional Notes
               </label>
               <textarea
+                id="booking-notes"
+                disabled={createBooking.isPending}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -147,6 +190,12 @@ export default function CustomerBookingPage() {
                 placeholder="Any specific concerns or requests..."
               />
             </div>
+
+            {(validationError || createBooking.isError) && (
+              <p role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800">
+                {validationError || 'Unable to book your service. Your details have been kept. Please try again.'}
+              </p>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -159,6 +208,7 @@ export default function CustomerBookingPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
+                disabled={createBooking.isPending}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Cancel
@@ -221,7 +271,7 @@ export default function CustomerBookingPage() {
         ))}
       </div>
 
-      {bookings.length === 0 && (
+      {!isError && bookings.length === 0 && (
         <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
           <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">No Bookings Yet</h3>

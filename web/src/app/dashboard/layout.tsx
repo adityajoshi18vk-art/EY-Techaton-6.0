@@ -118,12 +118,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <h1 className="text-2xl font-bold text-gray-900">AI Agent Dashboard</h1>
               <p className="text-sm text-gray-500">Master orchestrator with 6 specialized agents</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">All Systems Operational</span>
-              </div>
-            </div>
           </div>
         </header>
 
