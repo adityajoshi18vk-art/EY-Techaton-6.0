@@ -10,7 +10,7 @@
     "index:docs": "tsx scripts/index_docs.ts",
     "generate:training": "tsx scripts/generate_jsonl.ts",
     "reindex": "curl -X POST http://localhost:4000/api/reindex",
-    "test": "echo 'Tests not yet implemented'"
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
