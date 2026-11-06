@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "scripts": {
+    "run": {
+      "enabled": true,
+      "command": "npx --no-install concurrently \"PORT=4000 npm run dev:server\" \"npm run dev:web\""
+    }
+  }
+}
