@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api-client';
 import { Wrench, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 export default function DiagnosticsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ['diagnostics'],
     queryFn: () => apiClient.getDiagnostics(),
     refetchInterval: 5000,
@@ -16,6 +16,19 @@ export default function DiagnosticsPage() {
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>;
   }
+
+  const errorMessage = isError ? (
+    <div role="alert" className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-800">
+      <h2 className="text-xl font-bold mb-2">Diagnostics unavailable</h2>
+      <p>We couldn't load vehicle diagnostics. Vehicle health cannot be confirmed right now.</p>
+      {data && <p className="mt-2">Showing the last loaded results below. They may be out of date.</p>}
+      <button type="button" onClick={() => refetch()} disabled={isFetching} className="mt-4 font-medium underline disabled:opacity-50">
+        {isFetching ? 'Retrying...' : 'Retry diagnostics'}
+      </button>
+    </div>
+  ) : null;
+
+  if (isError && !data) return errorMessage;
 
   const diagnostics = data?.diagnostics || [];
   const summary = data?.summary || {};
@@ -44,6 +57,8 @@ export default function DiagnosticsPage() {
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Diagnostics Agent</h2>
         <p className="text-gray-600">Predictive maintenance and fault detection</p>
       </div>
+
+      {errorMessage}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -130,7 +145,7 @@ export default function DiagnosticsPage() {
         ))}
       </div>
 
-      {diagnostics.length === 0 && (
+      {!isError && diagnostics.length === 0 && (
         <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">All Systems Healthy</h3>
