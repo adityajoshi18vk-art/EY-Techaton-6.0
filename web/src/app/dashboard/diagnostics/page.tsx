@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api-client';
 import { Wrench, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 export default function DiagnosticsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ['diagnostics'],
     queryFn: () => apiClient.getDiagnostics(),
     refetchInterval: 5000,
@@ -15,6 +15,18 @@ export default function DiagnosticsPage() {
     return <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>;
+  }
+
+  if (isError) {
+    return (
+      <div role="alert" className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-800">
+        <h2 className="text-xl font-bold mb-2">Diagnostics unavailable</h2>
+        <p>We couldn't load vehicle diagnostics. Vehicle health cannot be confirmed right now.</p>
+        <button type="button" onClick={() => refetch()} disabled={isFetching} className="mt-4 font-medium underline disabled:opacity-50">
+          {isFetching ? 'Retrying...' : 'Retry diagnostics'}
+        </button>
+      </div>
+    );
   }
 
   const diagnostics = data?.diagnostics || [];
